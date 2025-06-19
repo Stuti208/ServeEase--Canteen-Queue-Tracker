@@ -7,13 +7,15 @@ import { IconButton } from '@mui/material';
 import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined';
 import FeedbackOutlinedIcon from '@mui/icons-material/FeedbackOutlined';
 import LunchDiningOutlinedIcon from '@mui/icons-material/LunchDiningOutlined';
+import ListAltOutlinedIcon from '@mui/icons-material/ListAltOutlined';
+import WindowOutlinedIcon from '@mui/icons-material/WindowOutlined';
 
 const Sidebar = () => {
   return (
 	  <div className="flex flex-col items-center justify-between p-5 h-full text-gray-300 bg-slate-900 w-35 rounded-4xl">
 		<div class="flex flex-col space-y-3">
 			<CustomLink to="/home/dashboard">
-				<SidebarOption Icon={AppsOutlinedIcon} text="Home"/>
+				<SidebarOption Icon={WindowOutlinedIcon} text="Home"/>
 			</CustomLink>
 			
 			<CustomLink to="/home/menu">
@@ -21,7 +23,7 @@ const Sidebar = () => {
 			</CustomLink>
 			
 			<CustomLink to="/home/orders">
-				<SidebarOption Icon={ AppsOutlinedIcon} text="Orders"/>
+				<SidebarOption Icon={ ListAltOutlinedIcon} text="Orders"/>
 			</CustomLink>
 			
 			<CustomLink to="/home/feedback">
@@ -33,9 +35,10 @@ const Sidebar = () => {
 			</CustomLink>
 		  </div>  
 		  
-		  <div>
+		  <div className="flex space-x-2 items-center hover:text-red-500 cursor-pointer">
 			  {/* <IconButton> */}
-				  <LogoutOutlinedIcon/>
+			  <LogoutOutlinedIcon />
+			  <h3>Sign Out</h3>
 			  {/* </IconButton> */}
 		  </div>
 

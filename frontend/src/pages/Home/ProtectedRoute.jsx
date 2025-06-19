@@ -1,11 +1,35 @@
-import React from 'react'
+import React from "react";
+import { Navigate, Outlet } from "react-router-dom";
 
-const ProtectedRoute = ({ children }) => {
-	
-// logic to check whether the user is authenticated or not , if the user is authenticated then the user will redirected to home page
-
-  return children	
-  
+// Helper to decode JWT and get user role
+function getUserRole() {
+  const token = localStorage.getItem("token");
+  if (!token) return null;
+  try {
+    // JWT is in format header.payload.signature (payload is base64)
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return payload.role;
+  } catch {
+    return null;
+  }
 }
 
-export default ProtectedRoute
+const ProtectedRoute = ({ allowedRoles }) => {
+  const token = localStorage.getItem("token");
+  const userRole = getUserRole();
+
+  if (!token) {
+    // Not logged in
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!allowedRoles.includes(userRole)) {
+    // Logged in, but not allowed
+    return <Navigate to="/home" replace />;
+  }
+
+  // Allowed
+  return <Outlet />;
+};
+
+export default ProtectedRoute;
