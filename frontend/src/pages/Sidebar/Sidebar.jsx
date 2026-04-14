@@ -11,7 +11,7 @@ import LunchDiningOutlinedIcon from '@mui/icons-material/LunchDiningOutlined';
 const Sidebar = () => {
   return (
 	  <div className="flex flex-col items-center justify-between p-5 h-full text-gray-300 bg-slate-900 w-35 rounded-4xl">
-		<div class="flex flex-col space-y-3">
+		<div className="flex flex-col space-y-3">
 			<CustomLink to="/home/dashboard">
 				<SidebarOption Icon={AppsOutlinedIcon} text="Home"/>
 			</CustomLink>

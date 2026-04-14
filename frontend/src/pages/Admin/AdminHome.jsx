@@ -1,10 +1,10 @@
 import React from 'react'
-import { Outlet } from 'react-router-dom';
-import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
-import { IconButton } from '@mui/material';
-import Sidebar from '../Sidebar/Sidebar';
+import { Outlet } from 'react-router-dom'
+import { IconButton } from '@mui/material'
+import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined'
+import AdminSidebar from './AdminSidebar'
 
-const Home = () => {
+const AdminHome = () => {
   return (
     <div className="bg-[#d9e8a0] p-2 h-screen">
 
@@ -19,14 +19,16 @@ const Home = () => {
 
         <div className="flex items-center space-x-2">
           <IconButton size="small">
-            <NotificationsNoneIcon style={{ color: 'white' }} />
+            <NotificationsNoneOutlinedIcon className="text-white" style={{ color: 'white' }} />
           </IconButton>
         </div>
       </nav>
 
       {/* Main layout */}
       <div className="flex h-[calc(100vh-5rem)] space-x-4">
-        <Sidebar />
+        <AdminSidebar/>
+
+        {/* Page content */}
         <div className="flex-1 overflow-y-auto">
           <Outlet />
         </div>
@@ -36,4 +38,4 @@ const Home = () => {
   )
 }
 
-export default Home
+export default AdminHome
