@@ -7,9 +7,10 @@ const AdminMenu = () => {
 
   const [items, setItems] = useState([])
   const [showForm, setShowForm] = useState(false)
-  const [formData, setFormData] = useState({ name: '', price: '', category: 'food', image: '' })
+  const [formData, setFormData] = useState({ name: '', price: '', category: 'food', image: '', prepTime: 10 })
   const [search, setSearch] = useState('')
   const [uploading, setUploading] = useState(false)
+  const [editingItem, setEditingItem] = useState(null)  // null = adding, item = editing
 
   const filteredItems = items.filter(item =>
     item.name.toLowerCase().includes(search.toLowerCase())
@@ -45,17 +46,51 @@ const AdminMenu = () => {
     setUploading(false)
   }
 
-  const handleAdd = async (e) => {
-    e.preventDefault()
-    const res = await fetch('http://localhost:3000/api/menu', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...formData, price: Number(formData.price) })
+  // opens form in edit mode pre-filled with item data
+  const handleEdit = (item) => {
+    setEditingItem(item)
+    setFormData({
+      name: item.name,
+      price: item.price,
+      category: item.category,
+      image: item.image || '',
+      prepTime: item.prepTime || 10
     })
-    const newItem = await res.json()
-    setItems([...items, newItem])
-    setFormData({ name: '', price: '', category: 'food', image: '' })
+    setShowForm(true)
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+
+    if (editingItem) {
+      // PUT — update existing item
+      const res = await fetch(`http://localhost:3000/api/menu/${editingItem._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...formData, price: Number(formData.price), prepTime: Number(formData.prepTime) })
+      })
+      const updatedItem = await res.json()
+      setItems(items.map(item => item._id === editingItem._id ? updatedItem : item))
+    } else {
+      // POST — add new item
+      const res = await fetch('http://localhost:3000/api/menu', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...formData, price: Number(formData.price), prepTime: Number(formData.prepTime) })
+      })
+      const newItem = await res.json()
+      setItems([...items, newItem])
+    }
+
+    setFormData({ name: '', price: '', category: 'food', image: '', prepTime: 10 })
+    setEditingItem(null)
     setShowForm(false)
+  }
+
+  const handleCancel = () => {
+    setShowForm(false)
+    setEditingItem(null)
+    setFormData({ name: '', price: '', category: 'food', image: '', prepTime: 10 })
   }
 
   const handleDelete = async (id) => {
@@ -84,7 +119,7 @@ const AdminMenu = () => {
             className="bg-slate-900 text-white placeholder-gray-400 px-4 py-2 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#d9e8a0]"
           />
           <button
-            onClick={() => setShowForm(!showForm)}
+            onClick={showForm ? handleCancel : () => setShowForm(true)}
             className="bg-slate-900 text-white px-4 py-2 rounded-full text-sm hover:bg-slate-700 transition-colors"
           >
             {showForm ? 'Cancel' : '+ Add Item'}
@@ -92,11 +127,13 @@ const AdminMenu = () => {
         </div>
       </div>
 
-      {/* Add Item Form */}
+      {/* Add / Edit Form */}
       {showForm && (
         <div className="bg-slate-900 rounded-2xl p-5">
-          <h2 className="text-white font-semibold mb-4">Add New Item</h2>
-          <form onSubmit={handleAdd} className="grid grid-cols-2 gap-4">
+          <h2 className="text-white font-semibold mb-4">
+            {editingItem ? `Edit — ${editingItem.name}` : 'Add New Item'}
+          </h2>
+          <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
             <input
               type="text"
               placeholder="Item name"
@@ -123,8 +160,18 @@ const AdminMenu = () => {
               <option value="snacks">Snacks</option>
             </select>
 
+            <input
+              type="number"
+              placeholder="Prep time (mins)"
+              value={formData.prepTime}
+              onChange={(e) => setFormData({ ...formData, prepTime: Number(e.target.value) })}
+              required
+              min="1"
+              className="bg-slate-800 text-white placeholder-gray-400 px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#d9e8a0]"
+            />
+
             {/* Image Upload */}
-            <label className={`relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed cursor-pointer transition-all overflow-hidden ${
+            <label className={`col-span-2 relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed cursor-pointer transition-all overflow-hidden ${
               uploading
                 ? 'border-slate-600 bg-slate-800 cursor-not-allowed'
                 : formData.image
@@ -158,7 +205,7 @@ const AdminMenu = () => {
               disabled={uploading}
               className="col-span-2 bg-[#d9e8a0] text-slate-900 font-semibold py-2 rounded-xl hover:bg-yellow-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Add Item
+              {editingItem ? 'Save Changes' : 'Add Item'}
             </button>
           </form>
         </div>
@@ -172,6 +219,7 @@ const AdminMenu = () => {
               <th className="text-left pb-3">Item</th>
               <th className="text-left pb-3">Category</th>
               <th className="text-left pb-3">Price</th>
+              <th className="text-left pb-3">Prep Time</th>
               <th className="text-left pb-3">Status</th>
               <th className="text-left pb-3">Actions</th>
             </tr>
@@ -179,7 +227,7 @@ const AdminMenu = () => {
           <tbody className="text-white">
             {filteredItems.length === 0 ? (
               <tr>
-                <td colSpan="5" className="text-center text-gray-400 py-8">
+                <td colSpan="6" className="text-center text-gray-400 py-8">
                   {search ? `No items found for "${search}"` : 'No items yet. Add your first menu item.'}
                 </td>
               </tr>
@@ -197,6 +245,7 @@ const AdminMenu = () => {
                   </td>
                   <td className="py-3 text-gray-400 capitalize">{item.category}</td>
                   <td className="py-3">₹{item.price}</td>
+                  <td className="py-3 text-gray-400">{item.prepTime ?? 10} min</td>
                   <td className="py-3">
                     <button
                       onClick={() => handleToggle(item._id)}
@@ -210,12 +259,21 @@ const AdminMenu = () => {
                     </button>
                   </td>
                   <td className="py-3">
-                    <button
-                      onClick={() => handleDelete(item._id)}
-                      className="text-red-400 hover:text-red-300 text-sm transition-colors"
-                    >
-                      Delete
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => handleEdit(item)}
+                        className="text-blue-400 hover:text-blue-300 text-sm transition-colors"
+                      >
+                        Edit
+                      </button>
+                      <span className="text-slate-600">|</span>
+                      <button
+                        onClick={() => handleDelete(item._id)}
+                        className="text-red-400 hover:text-red-300 text-sm transition-colors"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))

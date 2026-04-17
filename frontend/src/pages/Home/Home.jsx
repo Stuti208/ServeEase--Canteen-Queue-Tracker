@@ -1,10 +1,46 @@
-import React from 'react'
-import { Outlet } from 'react-router-dom';
-import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
-import { IconButton } from '@mui/material';
-import Sidebar from '../Sidebar/Sidebar';
+import React, { useRef, useState, useEffect } from 'react'
+import { Outlet } from 'react-router-dom'
+import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone'
+import { IconButton } from '@mui/material'
+import Sidebar from '../Sidebar/Sidebar'
+import { useNotifications } from '../../context/NotificationContext'
+
+const timeAgo = (date) => {
+  const diff = Math.floor((Date.now() - new Date(date)) / 1000)
+  if (diff < 60) return 'just now'
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
+  return `${Math.floor(diff / 3600)}h ago`
+}
+
+const notifIcon = {
+  order_ready: '✅',
+  item_ready: '🔔',
+  reassigned: '⚠️',
+  received: '🎉'
+}
 
 const Home = () => {
+
+  const { notifications, unreadCount, markAllRead } = useNotifications()
+  const [showNotifs, setShowNotifs] = useState(false)
+  const panelRef = useRef(null)
+
+  // close dropdown when clicking outside
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (panelRef.current && !panelRef.current.contains(e.target)) {
+        setShowNotifs(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  const handleBellClick = () => {
+    setShowNotifs(prev => !prev)
+    if (!showNotifs) markAllRead()
+  }
+
   return (
     <div className="bg-[#d9e8a0] p-2 h-screen">
 
@@ -17,10 +53,67 @@ const Home = () => {
           <h2 className="text-white font-semibold">Canteen Queue Tracker</h2>
         </div>
 
-        <div className="flex items-center space-x-2">
-          <IconButton size="small">
-            <NotificationsNoneIcon style={{ color: 'white' }} />
-          </IconButton>
+        {/* Bell icon + dropdown */}
+        <div className="relative flex items-center space-x-2" ref={panelRef}>
+          <div className="relative">
+            <IconButton size="small" onClick={handleBellClick}>
+              <NotificationsNoneIcon style={{ color: 'white' }} />
+            </IconButton>
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 rounded-full text-white text-[9px] flex items-center justify-center font-bold pointer-events-none">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </div>
+
+          {/* Notification Panel */}
+          {showNotifs && (
+            <div className="absolute right-0 top-10 w-80 bg-slate-900 rounded-2xl shadow-2xl z-50 overflow-hidden">
+
+              {/* Panel header */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700">
+                <h3 className="text-white font-semibold text-sm">Notifications</h3>
+                {notifications.length > 0 && (
+                  <button
+                    onClick={markAllRead}
+                    className="text-gray-400 hover:text-white text-xs transition-colors"
+                  >
+                    Mark all read
+                  </button>
+                )}
+              </div>
+
+              {/* Notification list */}
+              <div className="max-h-80 overflow-y-auto">
+                {notifications.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 space-y-2">
+                    <span className="text-2xl">🔕</span>
+                    <p className="text-gray-400 text-xs">No notifications yet</p>
+                  </div>
+                ) : (
+                  notifications.map(notif => (
+                    <div
+                      key={notif.id}
+                      className={`flex items-start gap-3 px-4 py-3 border-b border-slate-800 last:border-0 ${
+                        !notif.read ? 'bg-slate-800/60' : ''
+                      }`}
+                    >
+                      <span className="text-lg flex-shrink-0 mt-0.5">{notifIcon[notif.type]}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-xs font-medium leading-snug">{notif.message}</p>
+                        <p className="text-gray-400 text-[10px] mt-0.5">{notif.sub}</p>
+                        <p className="text-gray-600 text-[10px] mt-0.5">{timeAgo(notif.timestamp)}</p>
+                      </div>
+                      {!notif.read && (
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#d9e8a0] flex-shrink-0 mt-1.5" />
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+
+            </div>
+          )}
         </div>
       </nav>
 

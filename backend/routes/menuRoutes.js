@@ -15,8 +15,8 @@ router.get('/', async (req, res) => {
 // POST add a new menu item
 router.post('/', async (req, res) => {
     try {
-        const { name, price, category, image } = req.body
-        const newItem = new MenuItem({ name, price, category, image })
+        const { name, price, category, image, prepTime } = req.body
+        const newItem = new MenuItem({ name, price, category, image, prepTime })
         const savedItem = await newItem.save()
         res.status(201).json(savedItem)
     } catch (error) {
@@ -29,6 +29,21 @@ router.delete('/:id', async (req, res) => {
     try {
         await MenuItem.findByIdAndDelete(req.params.id)
         res.status(200).json({ message: 'Item deleted' })
+    } catch (error) {
+        res.status(500).json({ message: error.message })
+    }
+})
+
+// PUT update a menu item
+router.put('/:id', async (req, res) => {
+    try {
+        const { name, price, category, image, prepTime } = req.body
+        const updatedItem = await MenuItem.findByIdAndUpdate(
+            req.params.id,
+            { name, price, category, image, prepTime },
+            { new: true }
+        )
+        res.status(200).json(updatedItem)
     } catch (error) {
         res.status(500).json({ message: error.message })
     }

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { RouterProvider, createBrowserRouter } from "react-router"
+import { NotificationProvider } from './context/NotificationContext'
 import Login from "./pages/Login"
 import ProtectedRoute from './pages/Home/ProtectedRoute'
 import Home from './pages/Home/Home'
@@ -24,7 +25,7 @@ function App() {
     },
     {
       path: "/home",
-      element: <ProtectedRoute><Home /></ProtectedRoute>,
+      element: <ProtectedRoute><NotificationProvider><Home /></NotificationProvider></ProtectedRoute>,
       children: [
         { index: true, element: <DashBoard /> },
         { path: 'dashboard', element: <DashBoard /> },
