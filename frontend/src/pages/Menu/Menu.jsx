@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNotifications } from '../../context/NotificationContext'
+import { getUser, getToken } from '../../utils/auth'
 
 const Menu = () => {
 
@@ -10,10 +11,9 @@ const Menu = () => {
 
   const { joinOrderRoom } = useNotifications()
   const [showModal, setShowModal] = useState(false)
-  const [customerName, setCustomerName] = useState('')
   const [placingOrder, setPlacingOrder] = useState(false)
   const [orderError, setOrderError] = useState('')
-  const [orderConfirmation, setOrderConfirmation] = useState(null)  // { queueNumber, estimatedTime }
+  const [orderConfirmation, setOrderConfirmation] = useState(null)
 
   useEffect(() => {
     fetchItems()
@@ -44,17 +44,17 @@ const Menu = () => {
   const totalQty = cartItems.reduce((total, item) => total + cart[item._id], 0)
 
   const handlePlaceOrder = async () => {
-    if (!customerName.trim()) return
-
     setPlacingOrder(true)
     setOrderError('')
 
     try {
       const res = await fetch('http://localhost:3000/api/orders', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getToken()}`
+        },
         body: JSON.stringify({
-          customerName: customerName.trim(),
           source: 'online',
           items: cartItems.map(item => ({
             menuItemId: item._id,
@@ -73,14 +73,12 @@ const Menu = () => {
         return
       }
 
-      // success — clear cart, show confirmation
-      localStorage.setItem('customerName', customerName.trim())
+      // success — store order ID and join socket room
       const existingIds = JSON.parse(localStorage.getItem('orderIds') || '[]')
       localStorage.setItem('orderIds', JSON.stringify([...existingIds, data._id]))
       joinOrderRoom(data._id)
       setCart({})
       setShowModal(false)
-      setCustomerName('')
       setOrderConfirmation({ queueNumber: data.queueNumber, estimatedTime: data.estimatedTime })
 
     } catch (err) {
@@ -127,13 +125,16 @@ const Menu = () => {
         </div>
       )}
 
-      {/* Customer Name Modal */}
+      {/* Confirm Order Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
           <div className="bg-slate-900 rounded-2xl p-6 max-w-sm w-full space-y-4">
-            <h2 className="text-white font-semibold text-lg">Confirm Your Order</h2>
+            <div>
+              <h2 className="text-white font-semibold text-lg">Confirm Your Order</h2>
+              <p className="text-gray-400 text-xs mt-0.5">Ordering as <span className="text-[#d9e8a0]">{getUser()?.name}</span></p>
+            </div>
 
-            {/* Cart summary inside modal */}
+            {/* Cart summary */}
             <div className="bg-slate-800 rounded-xl p-3 space-y-2 max-h-40 overflow-y-auto">
               {cartItems.map(item => (
                 <div key={item._id} className="flex justify-between text-sm">
@@ -146,16 +147,6 @@ const Menu = () => {
                 <span>₹{cartTotal}</span>
               </div>
             </div>
-
-            <input
-              type="text"
-              placeholder="Enter your name"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handlePlaceOrder()}
-              autoFocus
-              className="w-full bg-slate-800 text-white placeholder-gray-400 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#d9e8a0]"
-            />
 
             {orderError && (
               <p className="text-red-400 text-sm">{orderError}</p>
@@ -171,7 +162,7 @@ const Menu = () => {
               </button>
               <button
                 onClick={handlePlaceOrder}
-                disabled={!customerName.trim() || placingOrder}
+                disabled={placingOrder}
                 className="flex-1 bg-[#d9e8a0] text-slate-900 font-semibold py-3 rounded-xl hover:bg-yellow-200 transition-colors text-sm disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {placingOrder ? 'Placing...' : 'Place Order'}

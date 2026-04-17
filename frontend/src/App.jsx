@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { RouterProvider, createBrowserRouter } from "react-router"
 import { NotificationProvider } from './context/NotificationContext'
 import Login from "./pages/Login"
@@ -17,8 +16,7 @@ import AdminMenu from "./pages/admin_pages/AdminMenu"
 import AdminFeedback from "./pages/admin_pages/AdminFeedback"
 import './App.css'
 
-function App() {
-  const router = createBrowserRouter([
+const router = createBrowserRouter([
     {
       path: "/",
       element: <Login />
@@ -46,8 +44,9 @@ function App() {
         { path: 'feedback', element: <AdminFeedback /> }
       ]
     }
-  ])
+])
 
+function App() {
   return <RouterProvider router={router} />
 }
 

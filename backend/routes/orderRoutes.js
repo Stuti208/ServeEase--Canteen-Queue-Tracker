@@ -2,6 +2,7 @@ const express = require('express')
 const router = express.Router()
 const Order = require('../models/Order')
 const MenuItem = require('../models/MenuItem')
+const { protect, optionalAuth } = require('../middleware/authMiddleware')
 
 // helper — calculates estimated time for a new order
 // logic: for each item, count how many of the same item exist
@@ -35,7 +36,7 @@ const calculateEstimatedTime = async (items) => {
 }
 
 // POST — place a new order (online or offline)
-router.post('/', async (req, res) => {
+router.post('/', optionalAuth, async (req, res) => {
     try {
         const { customerName, items, source } = req.body
 
@@ -60,7 +61,8 @@ router.post('/', async (req, res) => {
         const estimatedTime = await calculateEstimatedTime(items)
 
         const newOrder = new Order({
-            customerName: customerName || 'Walk-in',
+            userId: req.user?.id || null,
+            customerName: req.user?.name || customerName || 'Walk-in',
             source: source || 'online',
             queueNumber,
             estimatedTime,
@@ -141,6 +143,19 @@ router.patch('/:orderId/items/:itemId/status', async (req, res) => {
 router.get('/', async (req, res) => {
     try {
         const orders = await Order.find().sort({ createdAt: -1 })
+        res.status(200).json(orders)
+    } catch (error) {
+        res.status(500).json({ message: error.message })
+    }
+})
+
+// GET — orders by userId (used after auth)
+router.get('/user/:userId', protect, async (req, res) => {
+    try {
+        if (req.user.id !== req.params.userId && req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Not authorized' })
+        }
+        const orders = await Order.find({ userId: req.params.userId }).sort({ createdAt: -1 })
         res.status(200).json(orders)
     } catch (error) {
         res.status(500).json({ message: error.message })

@@ -6,6 +6,8 @@ const cors = require('cors')
 const connectDB = require('./config/db')
 const menuRoutes = require('./routes/menuRoutes')
 const orderRoutes = require('./routes/orderRoutes')
+const authRoutes = require('./routes/authRoutes')
+const feedbackRoutes = require('./routes/feedbackRoutes')
 const Order = require('./models/Order')
 
 const app = express()
@@ -23,8 +25,10 @@ app.use(express.json())
 // attach io to every request so routes can emit events
 app.set('io', io)
 
+app.use('/api/auth', authRoutes)
 app.use('/api/menu', menuRoutes)
 app.use('/api/orders', orderRoutes)
+app.use('/api/feedback', feedbackRoutes)
 
 io.on('connection', (socket) => {
     console.log(`Socket connected: ${socket.id}`)

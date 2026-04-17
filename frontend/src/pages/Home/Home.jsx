@@ -47,10 +47,14 @@ const Home = () => {
       {/* Navbar */}
       <nav className="w-full h-10 rounded-3xl flex items-center justify-between bg-slate-900 mb-4 px-4">
         <div className="flex items-center space-x-2">
-          <div className="bg-[#d9e8a0] rounded-full w-7 h-7 flex items-center justify-center">
-            <span className="text-black text-sm font-bold">W</span>
+          <div className="relative w-7 h-7 flex-shrink-0">
+            <div className="absolute inset-0 rounded-full" style={{ background: 'conic-gradient(from 180deg, #c9a84c, #f5e27a, #c9a84c, #8b6914, #c9a84c)' }} />
+            <div className="absolute rounded-full bg-[#2a2d4a]" style={{ inset: '2px' }} />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-[9px] font-bold italic select-none" style={{ background: 'linear-gradient(135deg, #f5e27a 0%, #c9a84c 50%, #f5e27a 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontFamily: 'Georgia, serif' }}>SE</span>
+            </div>
           </div>
-          <h2 className="text-white font-semibold">Canteen Queue Tracker</h2>
+          <h2 className="text-white font-semibold">ServeEase</h2>
         </div>
 
         {/* Bell icon + dropdown */}

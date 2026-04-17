@@ -1,11 +1,11 @@
 import React from 'react'
+import { Navigate } from 'react-router-dom'
+import { getUser } from '../../utils/auth'
 
 const ProtectedRoute = ({ children }) => {
-	
-// logic to check whether the user is authenticated or not , if the user is authenticated then the user will redirected to home page
-
-  return children	
-  
+  const user = getUser()
+  if (!user) return <Navigate to="/" replace />
+  return children
 }
 
 export default ProtectedRoute

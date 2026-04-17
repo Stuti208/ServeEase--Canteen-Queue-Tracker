@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNotifications } from '../../context/NotificationContext'
+import { getUser, getToken } from '../../utils/auth'
 
 const STATUS_STEPS = ['pending', 'cooking', 'ready', 'completed']
 
@@ -96,20 +97,16 @@ const getRemainingTime = (order) => {
 
 const Orders = () => {
 
-  // AUTH TODO: replace with userId from JWT token
-  const [customerName, setCustomerName] = useState(
-    () => localStorage.getItem('customerName') || ''
-  )
+  const user = getUser()
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(false)
   const [expandedOrder, setExpandedOrder] = useState(null)
-  const [nameInput, setNameInput] = useState('')
   const [tick, setTick] = useState(0)
   const { joinOrderRoom } = useNotifications()
 
   useEffect(() => {
-    if (customerName) fetchOrders(customerName)
-  }, [customerName])
+    if (user) fetchOrders()
+  }, [])
 
   useEffect(() => {
     const interval = setInterval(() => setTick(t => t + 1), 60000)
@@ -131,11 +128,12 @@ const Orders = () => {
     return () => window.removeEventListener('serveease:order:updated', handler)
   }, [])
 
-  const fetchOrders = async (name) => {
+  const fetchOrders = async () => {
     setLoading(true)
     try {
-      // AUTH TODO: replace with /api/orders/user/:userId
-      const res = await fetch(`http://localhost:3000/api/orders/${encodeURIComponent(name)}`)
+      const res = await fetch(`http://localhost:3000/api/orders/user/${user.id}`, {
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      })
       const data = await res.json()
       setOrders(data)
     } catch (err) {
@@ -145,47 +143,7 @@ const Orders = () => {
     }
   }
 
-  const handleNameSubmit = (e) => {
-    e.preventDefault()
-    if (!nameInput.trim()) return
-    const name = nameInput.trim()
-    localStorage.setItem('customerName', name)
-    setCustomerName(name)
-  }
-
   const toggleExpand = (id) => setExpandedOrder(expandedOrder === id ? null : id)
-
-  // No name — show lookup screen
-  if (!customerName) {
-    return (
-      <div className="p-4 flex flex-col items-center justify-center h-full">
-        <div className="bg-slate-900 rounded-2xl p-8 w-full max-w-sm text-center space-y-5">
-          <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center text-3xl mx-auto">📋</div>
-          <div>
-            <h2 className="text-white font-semibold text-lg">Track Your Orders</h2>
-            <p className="text-gray-400 text-sm mt-1">Enter the name you used while placing your order</p>
-          </div>
-          <form onSubmit={handleNameSubmit} className="space-y-3">
-            <input
-              type="text"
-              placeholder="Your name"
-              value={nameInput}
-              onChange={(e) => setNameInput(e.target.value)}
-              autoFocus
-              className="w-full bg-slate-800 text-white placeholder-gray-400 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#d9e8a0]"
-            />
-            <button
-              type="submit"
-              disabled={!nameInput.trim()}
-              className="w-full bg-[#d9e8a0] text-slate-900 font-semibold py-3 rounded-xl hover:bg-yellow-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              View My Orders
-            </button>
-          </form>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="p-4 space-y-4">
@@ -194,14 +152,8 @@ const Orders = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">My Orders</h1>
-          <p className="text-slate-500 text-sm">Hey, <span className="font-medium text-slate-700">{customerName}</span></p>
+          <p className="text-slate-500 text-sm">Hey, <span className="font-medium text-slate-700">{user?.name}</span></p>
         </div>
-        <button
-          onClick={() => { setCustomerName(''); setOrders([]); localStorage.removeItem('customerName') }}
-          className="text-xs text-slate-400 hover:text-slate-700 border border-slate-300 px-3 py-1.5 rounded-full transition-colors"
-        >
-          Not you?
-        </button>
       </div>
 
       {/* Loading */}
