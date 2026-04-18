@@ -1,22 +1,13 @@
 import React from 'react'
-import { useNavigate } from 'react-router-dom'
 import CustomLink from './CustomLink'
 import SidebarOption from './SidebarOption'
 import AppsOutlinedIcon from '@mui/icons-material/AppsOutlined'
-import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined'
 import { IconButton } from '@mui/material'
 import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined'
 import FeedbackOutlinedIcon from '@mui/icons-material/FeedbackOutlined'
 import LunchDiningOutlinedIcon from '@mui/icons-material/LunchDiningOutlined'
-import { logout } from '../../utils/auth'
 
-const Sidebar = () => {
-  const navigate = useNavigate()
-
-  const handleLogout = () => {
-    logout()
-    navigate('/')
-  }
+const Sidebar = ({ onLogoutRequest }) => {
 
   return (
     <div className="flex flex-col items-center justify-between p-5 h-full text-gray-300 bg-slate-900 w-35 rounded-4xl">
@@ -36,13 +27,9 @@ const Sidebar = () => {
         <CustomLink to="/home/feedback">
           <SidebarOption Icon={FeedbackOutlinedIcon} text="Feedback" />
         </CustomLink>
-
-        <CustomLink to="/home/settings">
-          <SidebarOption Icon={SettingsOutlinedIcon} text="Settings" />
-        </CustomLink>
       </div>
 
-      <IconButton onClick={handleLogout} title="Log out">
+      <IconButton onClick={onLogoutRequest} title="Log out">
         <LogoutOutlinedIcon style={{ color: '#94a3b8' }} />
       </IconButton>
     </div>

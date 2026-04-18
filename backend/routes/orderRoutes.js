@@ -139,6 +139,90 @@ router.patch('/:orderId/items/:itemId/status', async (req, res) => {
     }
 })
 
+// GET — dashboard stats (admin)
+router.get('/stats', async (req, res) => {
+    try {
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+
+        const [todayOrders, activeOrders, menuItems, feedbackCount, last7DaysOrders] = await Promise.all([
+            Order.find({ createdAt: { $gte: today } }),
+            Order.find({ status: { $in: ['pending', 'partially_ready', 'ready'] } }),
+            require('../models/MenuItem').countDocuments({ isAvailable: true }),
+            require('../models/Feedback').countDocuments(),
+            Order.find({ createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } })
+        ])
+
+        const revenue = todayOrders
+            .filter(o => o.status !== 'cancelled')
+            .reduce((sum, o) => sum + o.totalAmount, 0)
+
+        const statusCounts = todayOrders.reduce((acc, o) => {
+            acc[o.status] = (acc[o.status] || 0) + 1
+            return acc
+        }, {})
+
+        // Hourly breakdown for today (orders per hour 8am–9pm)
+        const hourlyData = Array.from({ length: 14 }, (_, i) => {
+            const hour = i + 8
+            const count = todayOrders.filter(o => new Date(o.createdAt).getHours() === hour).length
+            const rev = todayOrders
+                .filter(o => new Date(o.createdAt).getHours() === hour && o.status !== 'cancelled')
+                .reduce((s, o) => s + o.totalAmount, 0)
+            return { hour: `${hour > 12 ? hour - 12 : hour}${hour >= 12 ? 'pm' : 'am'}`, orders: count, revenue: rev }
+        })
+
+        // Last 7 days daily breakdown
+        const dailyData = Array.from({ length: 7 }, (_, i) => {
+            const d = new Date()
+            d.setDate(d.getDate() - (6 - i))
+            d.setHours(0, 0, 0, 0)
+            const next = new Date(d); next.setDate(next.getDate() + 1)
+            const dayOrders = last7DaysOrders.filter(o => {
+                const t = new Date(o.createdAt)
+                return t >= d && t < next
+            })
+            const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+            return {
+                day: days[d.getDay()],
+                orders: dayOrders.length,
+                revenue: dayOrders.filter(o => o.status !== 'cancelled').reduce((s, o) => s + o.totalAmount, 0)
+            }
+        })
+
+        // Top items today
+        const itemMap = {}
+        todayOrders.forEach(o => o.items.forEach(it => {
+            itemMap[it.name] = (itemMap[it.name] || 0) + it.quantity
+        }))
+        const topItems = Object.entries(itemMap)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5)
+            .map(([name, qty]) => ({ name, qty }))
+
+        res.json({
+            today: {
+                total: todayOrders.length,
+                pending: statusCounts.pending || 0,
+                cooking: todayOrders.filter(o => o.items.some(i => i.status === 'cooking')).length,
+                ready: statusCounts.ready || 0,
+                completed: statusCounts.completed || 0,
+                cancelled: statusCounts.cancelled || 0,
+                revenue
+            },
+            active: activeOrders.length,
+            menuItems,
+            feedbackCount,
+            hourlyData,
+            dailyData,
+            topItems,
+            recentOrders: await Order.find().sort({ createdAt: -1 }).limit(6)
+        })
+    } catch (error) {
+        res.status(500).json({ message: error.message })
+    }
+})
+
 // GET — all orders (admin)
 router.get('/', async (req, res) => {
     try {

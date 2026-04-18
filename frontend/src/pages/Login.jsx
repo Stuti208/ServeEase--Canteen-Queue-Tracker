@@ -91,7 +91,7 @@ const Login = () => {
         </div>
 
         <div className="space-y-5">
-          <h2 className="text-white text-4xl font-bold leading-tight">
+          <h2 className="text-white text-5xl font-bold leading-tight">
             Skip the queue,<br />not the food.
           </h2>
           <p className="text-slate-400 text-base leading-relaxed max-w-sm">
