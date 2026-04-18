@@ -35,7 +35,7 @@ The objective of this system is to eliminate long waiting times and manual queue
    - Visual representations and metrics including:
      - Number of people currently in the queue
      - Most profitable items
-     - Monthly income chart
+     - Daily sales trend and hourly demand charts
      - Live order statistics
    - Sidebar navigation for streamlined access to all admin functionalities.
 
@@ -64,8 +64,8 @@ The objective of this system is to eliminate long waiting times and manual queue
 
 | Layer        | Technology           |
 |--------------|----------------------|
-| Frontend     | React.js             |
-| Backend      | Node.js, Express.js  |
+| Frontend     | React.js, Tailwind CSS |
+| Backend      | Node.js, Express.js, JWT |
 | Database     | MongoDB (via Mongoose) |
 | Real-time    | Socket.io            |
 | Others       | dotenv, CORS         |
