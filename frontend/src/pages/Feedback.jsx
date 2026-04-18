@@ -1,98 +1,157 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+import React, { useState } from 'react'
+import { getToken, getUser } from '../utils/auth'
 
-const ORDERS_API = "http://localhost:5000/api/orders/my";
-const FEEDBACK_API = "http://localhost:5000/api/feedback";
+const CATEGORIES = [
+  { value: 'food', label: 'Food Quality', emoji: '🍱' },
+  { value: 'service', label: 'Service', emoji: '🙌' },
+  { value: 'app', label: 'App Experience', emoji: '📱' },
+  { value: 'other', label: 'Other', emoji: '💬' },
+]
 
 const Feedback = () => {
-  const [orders, setOrders] = useState([]);
-  const [feedback, setFeedback] = useState({ order: "", rating: 5, comment: "" });
-  const [message, setMessage] = useState("");
-  const [myFeedbacks, setMyFeedbacks] = useState([]);
-
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    axios
-      .get(ORDERS_API, { headers: { Authorization: `Bearer ${token}` } })
-      .then((res) => setOrders(res.data));
-    axios
-      .get(`${FEEDBACK_API}/my`, { headers: { Authorization: `Bearer ${token}` } })
-      .then((res) => setMyFeedbacks(res.data));
-  }, []);
+  const user = getUser()
+  const [rating, setRating] = useState(0)
+  const [hovered, setHovered] = useState(0)
+  const [category, setCategory] = useState('food')
+  const [message, setMessage] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+  const [error, setError] = useState('')
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    const token = localStorage.getItem("token");
+    e.preventDefault()
+    if (rating === 0) { setError('Please select a star rating.'); return }
+    if (!message.trim()) { setError('Please write a message.'); return }
+    setError('')
+    setLoading(true)
     try {
-      await axios.post(FEEDBACK_API, feedback, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setMessage("Feedback submitted!");
-      setFeedback({ order: "", rating: 5, comment: "" });
+      const res = await fetch('http://localhost:3000/api/feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getToken()}`
+        },
+        body: JSON.stringify({ rating, category, message: message.trim() })
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data.message || 'Failed to submit.'); return }
+      setSubmitted(true)
     } catch {
-      setMessage("Failed to submit feedback.");
+      setError('Something went wrong. Check your connection.')
+    } finally {
+      setLoading(false)
     }
-  };
+  }
+
+  const resetForm = () => {
+    setRating(0)
+    setHovered(0)
+    setCategory('food')
+    setMessage('')
+    setSubmitted(false)
+    setError('')
+  }
+
+  if (submitted) {
+    return (
+      <div className="p-4 flex items-center justify-center h-full">
+        <div className="bg-slate-900 rounded-2xl p-10 max-w-sm w-full text-center space-y-4">
+          <div className="w-16 h-16 rounded-full bg-[#d9e8a0] flex items-center justify-center text-3xl mx-auto">✓</div>
+          <h2 className="text-white text-xl font-bold">Thanks for your feedback!</h2>
+          <p className="text-slate-400 text-sm">Your response helps us improve ServeEase.</p>
+          <button
+            onClick={resetForm}
+            className="w-full bg-slate-800 text-white py-3 rounded-xl hover:bg-slate-700 transition-colors text-sm font-medium"
+          >
+            Submit another
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="p-6 w-full min-h-screen bg-slate-900 rounded-2xl text-white">
-      <h2 className="text-2xl font-bold mb-4">Submit Feedback</h2>
-      {message && <div className="mb-2">{message}</div>}
-      <form onSubmit={handleSubmit} className="mb-6 flex flex-col gap-2 max-w-md">
-        <label>
-          Order:
-          <select
-            className="w-full p-2 rounded bg-slate-800 text-white"
-            value={feedback.order}
-            onChange={(e) => setFeedback({ ...feedback, order: e.target.value })}
-            required
-          >
-            <option value="">Select Order</option>
-            {orders.map((order) => (
-              <option key={order._id} value={order._id}>
-                {order._id.slice(-6)} - {order.items.map(i => i.menuItem?.name).join(", ")}
-              </option>
+    <div className="p-4 max-w-lg">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-slate-900">Feedback</h1>
+        <p className="text-slate-500 text-sm mt-1">Help us make ServeEase better</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="bg-slate-900 rounded-2xl p-6 space-y-6">
+
+        {/* Star rating */}
+        <div>
+          <p className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-3">How would you rate us?</p>
+          <div className="flex gap-2">
+            {[1, 2, 3, 4, 5].map(star => (
+              <button
+                key={star}
+                type="button"
+                onClick={() => setRating(star)}
+                onMouseEnter={() => setHovered(star)}
+                onMouseLeave={() => setHovered(0)}
+                className="text-3xl transition-transform hover:scale-110 focus:outline-none"
+              >
+                <span className={(hovered || rating) >= star ? 'text-[#d9e8a0]' : 'text-slate-700'}>★</span>
+              </button>
             ))}
-          </select>
-        </label>
-        <label>
-          Rating:
-          <select
-            className="w-full p-2 rounded bg-slate-800 text-white"
-            value={feedback.rating}
-            onChange={(e) => setFeedback({ ...feedback, rating: e.target.value })}
-            required
-          >
-            {[5, 4, 3, 2, 1].map((r) => (
-              <option key={r} value={r}>{r} Star{r > 1 && "s"}</option>
+          </div>
+          {rating > 0 && (
+            <p className="text-[#d9e8a0] text-xs mt-2">
+              {['', 'Poor', 'Fair', 'Good', 'Great', 'Excellent!'][rating]}
+            </p>
+          )}
+        </div>
+
+        {/* Category */}
+        <div>
+          <p className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-3">Category</p>
+          <div className="grid grid-cols-2 gap-2">
+            {CATEGORIES.map(cat => (
+              <button
+                key={cat.value}
+                type="button"
+                onClick={() => setCategory(cat.value)}
+                className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+                  category === cat.value
+                    ? 'bg-[#d9e8a0] text-slate-900'
+                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                }`}
+              >
+                <span>{cat.emoji}</span>
+                {cat.label}
+              </button>
             ))}
-          </select>
-        </label>
-        <label>
-          Comment:
+          </div>
+        </div>
+
+        {/* Message */}
+        <div>
+          <p className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-3">Your message</p>
           <textarea
-            className="w-full p-2 rounded bg-slate-800 text-white"
-            value={feedback.comment}
-            onChange={(e) => setFeedback({ ...feedback, comment: e.target.value })}
-            placeholder="Your feedback..."
+            rows={4}
+            placeholder="Tell us what you think..."
+            value={message}
+            onChange={e => setMessage(e.target.value)}
+            className="w-full bg-slate-800 text-white placeholder-slate-600 px-4 py-3 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#d9e8a0] resize-none border border-slate-700 transition-colors"
           />
-        </label>
-        <button className="bg-yellow-300 text-black px-4 py-2 rounded font-semibold hover:bg-yellow-400 transition" type="submit">
-          Submit
+          <p className="text-slate-600 text-xs mt-1 text-right">{message.length}/500</p>
+        </div>
+
+        {error && (
+          <p className="text-red-400 text-sm bg-red-900/20 px-4 py-2 rounded-xl">{error}</p>
+        )}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-[#d9e8a0] text-slate-900 font-bold py-3 rounded-xl hover:bg-yellow-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {loading ? 'Submitting…' : 'Submit Feedback'}
         </button>
       </form>
-      <h3 className="text-xl font-bold mb-2">My Feedback</h3>
-      <ul>
-        {myFeedbacks.map((fb) => (
-          <li key={fb._id} className="mb-2 border-b border-slate-700 pb-2">
-            <span className="font-semibold">Order:</span> {fb.order?._id?.slice(-6)}<br />
-            <span className="font-semibold">Rating:</span> {fb.rating} Stars<br />
-            <span className="font-semibold">Comment:</span> {fb.comment}
-          </li>
-        ))}
-      </ul>
     </div>
-  );
-};
+  )
+}
 
 export default Feedback;
