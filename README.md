@@ -6,10 +6,6 @@ A full-stack web application that eliminates canteen queues by letting students 
 
 ---
 
-## Live Demo
-> Coming soon — deploying shortly.
-
----
 
 ## The Problem It Solves
 
